@@ -1,14 +1,13 @@
 const express = require("express");
 const app = express();
 const { resolve } = require("path");
-// Replace if using a different env file or config
 const env = require("dotenv").config({ path: "./.env" });
-
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2022-08-01",
+  apiVersion: "2024-04-10",
 });
 
 app.use(express.static(process.env.STATIC_DIR));
+app.use(express.json());
 
 app.get("/", (req, res) => {
   const path = resolve(process.env.STATIC_DIR + "/index.html");
@@ -21,24 +20,26 @@ app.get("/config", (req, res) => {
   });
 });
 
-app.post("/create-payment-intent", async (req, res) => {
+app.post("/create-checkout-session", async (req, res) => {
   try {
-    const paymentIntent = await stripe.paymentIntents.create({
-      currency: "EUR",
-      amount: 1999,
-      automatic_payment_methods: { enabled: true },
+    // Create a new customer or use an existing customer
+    const customer = await stripe.customers.create({
+      email: req.body.email,
+    }); 
+    // Create a Checkout Session in "setup" mode
+    const session = await stripe.checkout.sessions.create({
+      customer: customer.id,
+      payment_method_types: ['card'],
+      mode: 'setup',
+      success_url: `${req.headers.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${req.headers.origin}/cancel`,
     });
 
-    // Send publishable key and PaymentIntent details to client
-    res.send({
-      clientSecret: paymentIntent.client_secret,
-    });
+    // Send the session URL back to the frontend for redirection
+    res.send({ url: session.url });
   } catch (e) {
-    return res.status(400).send({
-      error: {
-        message: e.message,
-      },
-    });
+    console.error("Error creating Checkout Session:", e.message);
+    res.status(400).send({ error: { message: `Checkout Session creation failed: ${e.message}` } });
   }
 });
 
