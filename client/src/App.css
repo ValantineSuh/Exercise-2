@@ -95,3 +95,28 @@ fieldset, input, select {
   font-size:0.7em;
 }
 
+/* Styles for the consent checkbox */
+.checkbox-container {
+  display: flex;
+  margin: 12px 0;
+  width: 200%;
+  flex-direction: row-reverse;
+}
+
+.checkbox-container label {
+  font-size: 15px;
+  cursor: pointer;
+  flex-grow: 1;
+  align-items: center;
+  display: flex;
+  width: auto;
+}
+
+#consent-checkbox {
+  /* margin-left: auto; */
+  width: 30px;
+  display: flex;
+  /* align-items: center; */
+  justify-content: flex-start;
+  margin: 0 auto;
+}

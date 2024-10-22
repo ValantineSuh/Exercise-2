@@ -1,38 +1,41 @@
-import { useEffect, useState } from "react";
-
-import { Elements } from "@stripe/react-stripe-js";
-import CheckoutForm from "./CheckoutForm";
-import { loadStripe } from "@stripe/stripe-js";
+import { useState } from "react";
 
 function Payment() {
-  const [stripePromise, setStripePromise] = useState(null);
-  const [clientSecret, setClientSecret] = useState("");
+  const [email, setEmail] = useState("");
 
-  useEffect(() => {
-    fetch("/config").then(async (r) => {
-      const { publishableKey } = await r.json();
-      setStripePromise(loadStripe(publishableKey));
-    });
-  }, []);
+  const handleCreateCheckoutSession = async () => {
+    try {
+      const response = await fetch("/create-checkout-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const { url } = await response.json();
 
-  useEffect(() => {
-    fetch("/create-payment-intent", {
-      method: "POST",
-      body: JSON.stringify({}),
-    }).then(async (result) => {
-      var { clientSecret } = await result.json();
-      setClientSecret(clientSecret);
-    });
-  }, []);
+      // Redirect to Checkout Session URL
+      window.location.href = url;
+    } catch (error) {
+      console.error("Error creating Checkout Session:", error);
+    }
+  };
 
   return (
     <>
-      <h1>React Stripe and the Payment Element</h1>
-      {clientSecret && stripePromise && (
-        <Elements stripe={stripePromise} options={{ clientSecret }}>
-          <CheckoutForm />
-        </Elements>
-      )}
+      <h1>Save Payment Method</h1>
+      <input
+        type="email"
+        placeholder="Enter your email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <div class="checkbox-container">
+        <label htmlFor="consent-checkbox">I agree to store my card details for future payments.</label>
+        <input type="checkbox" id="consent-checkbox" required />
+      </div>
+
+      <button onClick={handleCreateCheckoutSession}>
+        Setup Payment Method
+      </button>
     </>
   );
 }
