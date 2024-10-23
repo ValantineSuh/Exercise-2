@@ -14,32 +14,40 @@ app.get("/", (req, res) => {
   res.sendFile(path);
 });
 
-app.get("/config", (req, res) => {
-  res.send({
-    publishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
-  });
-});
-
+// Debugging endpoint configuration
 app.post("/create-checkout-session", async (req, res) => {
   try {
-    // Create a new customer or use an existing customer
+    console.log("Request body received:", req.body); // Log the incoming request body
+
+    // Validate the email in the request
+    if (!req.body.email) {
+      throw new Error("Email is required");
+    }
+
+    // Create a new customer or use an existing one based on email
     const customer = await stripe.customers.create({
       email: req.body.email,
     });
-    // Create a Checkout Session in "setup" mode
+
+    console.log("Customer created:", customer.id); // Log the customer creation
+
+    // Create the checkout session in setup mode for SEPA direct debit
     const session = await stripe.checkout.sessions.create({
       customer: customer.id,
-      payment_method_types: ['card'],
+      payment_method_types: ['card'], // Use card as the payment method
+      // payment_method_types: ['sepa_debit'], // Use SEPA debit as the payment method
       mode: 'setup',
-      success_url: `http://localhost:5252/success?session_id={CHECKOUT_SESSION_ID}`, // Replace with your actual success URL
-      cancel_url: `http://localhost:5252/cancel`, // Replace with your actual cancel URL
+      success_url: `${req.headers.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${req.headers.origin}/cancel`,
     });
 
-    // Send the session URL back to the frontend for redirection
+    console.log("Checkout session created:", session.id); // Log the session creation
+
+    // Respond with the checkout session URL
     res.send({ url: session.url });
-  } catch (e) {
-    console.error("Error creating Checkout Session:", e.message);
-    res.status(400).send({ error: { message: `Checkout Session creation failed: ${e.message}` } });
+  } catch (error) {
+    console.error("Error creating Checkout Session:", error.message); // Log the error on server
+    res.status(400).send({ error: { message: `Checkout Session creation failed: ${error.message}` } });
   }
 });
 
@@ -47,7 +55,8 @@ app.post("/create-payment-intent", async (req, res) => {
   try {
     const paymentMethods = await stripe.paymentMethods.list({
       customer: req.body.customerId,
-      type: 'card',
+      type: 'card', // Use card as the payment method
+      // type: 'sepa_debit', // Use SEPA debit as the payment method
     });
 
     if (paymentMethods.data.length === 0) {
