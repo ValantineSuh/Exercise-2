@@ -16,18 +16,11 @@ function Payment() {
     }
 
     try {
-      // Logging the request body before making the fetch call
-      console.log("Creating Checkout Session with email:", email);
-
       const response = await fetch("/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-
-      // Log response status and headers to check for any issues
-      console.log("Response status:", response.status);
-      console.log("Response headers:", response.headers);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -39,7 +32,6 @@ function Payment() {
 
       // Check if the server responded with a valid URL
       if (url) {
-        console.log("Redirecting to:", url); // Log URL for debugging
         window.location.href = url;
       } else {
         throw new Error("No URL returned from server");
