@@ -30,6 +30,7 @@ app.post("/create-checkout-session", async (req, res) => {
     const session = await stripe.checkout.sessions.create({
       customer: customer.id,
       payment_method_types: ['card'], // Use card as the payment method
+      // payment_method_types: ['bacs_debit'], // Use BACS debit as the payment method
       // payment_method_types: ['sepa_debit'], // Use SEPA debit as the payment method
       mode: 'setup',
       success_url: `https://localhost:5252/success?session_id={CHECKOUT_SESSION_ID}`,
@@ -76,6 +77,7 @@ app.post("/create-payment-intent", async (req, res) => {
     const paymentMethods = await stripe.paymentMethods.list({
       customer: req.body.customerId,
       type: 'card', // Use card as the payment method
+      // type: 'bacs_debit', // Use BACS debit as the payment method
       // type: 'sepa_debit', // Use SEPA debit as the payment method
     });
 
@@ -86,6 +88,7 @@ app.post("/create-payment-intent", async (req, res) => {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: 1099,
       currency: 'eur',
+      // currency: 'gbp', // For BACS debit
       automatic_payment_methods: { enabled: true },
       customer: req.body.customerId,
       payment_method: paymentMethods.data[0].id,
